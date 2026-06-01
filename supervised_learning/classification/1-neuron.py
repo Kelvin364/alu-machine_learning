@@ -1,47 +1,62 @@
 #!/usr/bin/env python3
-"""Class Neuron that defines a single neuron performing binary classification
 """
-
+Neuron module for binary classification.
+"""
 
 import numpy as np
 
 
 class Neuron:
-    """ Class Neuron
+    """
+    A single neuron performing binary classification.
     """
 
     def __init__(self, nx):
-        """ Instantiation function of the neuron
+        """
+        Initialize a Neuron instance.
 
         Args:
-            nx (_type_): _description_
+            nx (int): The number of input features to the neuron.
 
         Raises:
-            TypeError: _description_
-            ValueError: _description_
+            TypeError: If nx is not an integer.
+            ValueError: If nx is less than 1.
         """
         if not isinstance(nx, int):
-            raise TypeError('nx must be an integer')
+            raise TypeError("nx must be a integer")
         if nx < 1:
-            raise ValueError('nx must be a positive')
+            raise ValueError("nx must be positive")
 
-        # initialize private instance attributes
-        self.__W = np.random.normal(size=(1, nx))
+        self.__W = np.random.normal(0, 1, (1, nx))
         self.__b = 0
         self.__A = 0
 
-        # getter function
     @property
     def W(self):
-        """Return weights"""
+        """
+        Getter for the weights vector.
+
+        Returns:
+            numpy.ndarray: The weights vector.
+        """
         return self.__W
 
     @property
     def b(self):
-        """Return bias"""
+        """
+        Getter for the bias.
+
+        Returns:
+            float: The bias value.
+        """
         return self.__b
 
     @property
     def A(self):
-        """Return output"""
+        """
+        Getter for the activated output.
+
+        Returns:
+            float: The activated output value.
+        """
         return self.__A

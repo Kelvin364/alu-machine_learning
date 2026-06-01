@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
-""" Function that calculates
- the shape of a matrix
- using recursion
- """
+"""Matrix shape utility."""
 
 
 def matrix_shape(matrix):
-    """
-    Calculates the shape of a matrix
-    """
+    """Return the shape of a nested list (matrix) as a list of ints."""
     shape = []
     while isinstance(matrix, list):
         shape.append(len(matrix))
+        if not matrix:
+            break
         matrix = matrix[0]
     return shape

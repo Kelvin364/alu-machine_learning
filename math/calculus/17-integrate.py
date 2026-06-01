@@ -1,30 +1,62 @@
 #!/usr/bin/env python3
-'''
-    The function below calculates
-    the integral of a polynomial
-'''
+"""Polynomial integral utilities.
+
+This module exposes `poly_integral(poly, C=0)` to compute the indefinite
+integral of a polynomial represented by a coefficient list where index i
+corresponds to the coefficient of x**i. The returned coefficient list is as
+small as possible and uses integers when coefficients are whole numbers.
+"""
+
+
+def _is_number(value):
+    """Return True if value is an int or float (but not bool)."""
+    return (isinstance(value, int) and not isinstance(value, bool)) or \
+        isinstance(value, float)
+
+
+def _is_int(value):
+    """Return True if value is a whole number (int-like)."""
+    if isinstance(value, int) and not isinstance(value, bool):
+        return True
+    if isinstance(value, float) and value.is_integer():
+        return True
+    return False
 
 
 def poly_integral(poly, C=0):
+    """Compute the integral coefficients of a polynomial.
+
+    Args:
+        poly (list): Coefficient list where poly[i] is coeff of x**i.
+        C (int): Integration constant to be placed as the constant term.
+
+    Returns:
+        list: Coefficients of the integral (minimal size), or None if invalid.
     """
-    calculates the integral of the given polynomial
-    """
-    if type(poly) is not list or len(poly) < 1:
+    # Validate inputs
+    if not isinstance(poly, list) or len(poly) == 0:
         return None
-    if type(C) is not int and type(C) is not float:
+    if not all(_is_number(c) for c in poly):
         return None
-    for coefficient in poly:
-        if type(coefficient) is not int and type(coefficient) is not float:
-            return None
-    if type(C) is float and C.is_integer():
-        C = int(C)
-    integral = [C]
-    for power, coefficient in enumerate(poly):
-        if (coefficient % (power + 1)) is 0:
-            new_coefficient = coefficient // (power + 1)
-        else:
-            new_coefficient = coefficient / (power + 1)
-        integral.append(new_coefficient)
-    while integral[-1] is 0 and len(integral) > 1:
-        integral = integral[:-1]
-    return integral
+    if not (isinstance(C, int) and not isinstance(C, bool)):
+        return None
+
+    # Build integral coefficients: first item is the constant C
+    result = [C]
+    for i, a_i in enumerate(poly):
+        denom = i + 1
+        term = a_i / float(denom)
+        # Convert whole-number coefficients to int
+        if _is_int(term):
+            term = int(term)
+        result.append(term)
+
+    # Minimize list size: remove trailing zeros
+    while len(result) > 1 and (result[-1] == 0 or result[-1] == 0.0):
+        result.pop()
+
+    # If all terms removed and C == 0, keep [0]
+    if len(result) == 0:
+        result = [0]
+
+    return result

@@ -1,57 +1,101 @@
 #!/usr/bin/env python3
-"""
-This class represents a poisson distribution
+"""Poisson distribution class.
+
+This module provides a `Poisson` class that estimates the rate parameter
+`lambtha` from data or uses a provided positive value.
 """
 
 
 class Poisson:
-    """
-    This class represents a poisson distribution
+    """Represents a Poisson distribution.
+
+    Attributes:
+        lambtha (float): Expected number of occurrences per time frame.
     """
 
     def __init__(self, data=None, lambtha=1.):
-        """
-        This function initializes the poisson distribution
-        and calculates lambtha if data is given
-        data - list of the data to be used to estimate the distribution
-        lambtha - expected number of occurences in a given time frame
+        """Initialize a Poisson distribution.
+
+        Args:
+            data (list or None): Observed counts to estimate `lambtha` from.
+            lambtha (float): Rate parameter if data is not provided.
+
+        Raises:
+            TypeError: If `data` is provided and is not a list.
+            ValueError: If `data` has fewer than two points.
+            ValueError: If `lambtha` is not a positive value (> 0) when used.
         """
         if data is None:
-            if lambtha <= 0:
+            # Use provided lambtha; must be positive
+            if lambtha is None or lambtha <= 0:
                 raise ValueError("lambtha must be a positive value")
-            else:
-                self.lambtha = float(lambtha)
+            self.lambtha = float(lambtha)
         else:
-            if type(data) is not list:
+            # Validate data
+            if not isinstance(data, list):
                 raise TypeError("data must be a list")
             if len(data) < 2:
                 raise ValueError("data must contain multiple values")
-            self.lambtha = float(sum(data) / len(data))
+
+            # Estimate lambtha from data (sample mean)
+            total = 0.0
+            for x in data:
+                total += x
+            self.lambtha = float(total / float(len(data)))
 
     def pmf(self, k):
+        """Return the PMF value for k successes.
+
+        If k is not an int, it is cast to int. Returns 0 for out-of-range k.
         """
-        Calculates the value of the PMF for a given number of “successes”
-        """
-        if not isinstance(k, int):
-            k = int(k)
+        try:
+            if not isinstance(k, int):
+                k = int(k)
+        except Exception:
+            return 0
+
         if k < 0:
             return 0
-        factorial = 1
-        for i in range(1, k + 1):
-            factorial = factorial * i
-        result = self.lambtha ** k * 2.7182818285 ** (-self.lambtha)
-        return result / factorial
+
+        # Use a numeric constant for Euler's number (no external modules)
+        e_const = 2.7182818285
+
+        # Compute k! iteratively
+        fact = 1
+        i = 1
+        while i <= k:
+            fact *= i
+            i += 1
+
+        # Compute lambda^k
+        lam_pow_k = 1.0
+        i = 0
+        while i < k:
+            lam_pow_k *= self.lambtha
+            i += 1
+
+        # Compute e^{-lambda} as 1/(e^{lambda})
+        exp_neg_lam = 1.0 / (e_const ** self.lambtha)
+
+        return exp_neg_lam * lam_pow_k / float(fact)
 
     def cdf(self, k):
+        """Return the CDF value for k successes.
+
+        Sums PMF from 0..k. Casts non-int k to int; returns 0 if k < 0.
         """
-        Calculate the value of the CDF for a given number of “successes”
-        k = "successes"
-        """
-        if not isinstance(k, int):
-            k = int(k)
+        try:
+            if not isinstance(k, int):
+                k = int(k)
+        except Exception:
+            return 0
+
         if k < 0:
             return 0
-        result = 0
-        for i in range(k + 1):
-            result = result + self.pmf(i)
-        return result
+
+        total = 0.0
+        i = 0
+        while i <= k:
+            total += self.pmf(i)
+            i += 1
+        return total

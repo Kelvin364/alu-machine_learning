@@ -1,32 +1,24 @@
 #!/usr/bin/env python3
-"""Function that performs a valid convolution on grayscale images"""
-
+"""Valid grayscale image convolution without more than two for loops."""
 import numpy as np
 
 
 def convolve_grayscale_valid(images, kernel):
-    """Performs a valid convolution on grayscale images
+    """Performs a valid convolution on grayscale images.
+
     Args:
-        images: `numpy.ndarray` with shape (m, h, w)
-            containing multiple grayscale images
-            m: `int`, is the number of images
-            h: `int`, is the height in pixels of the images
-            w: `int`, is the width in pixels of the images
-        kernel: `numpy.ndarray` with shape (kh, kw)
-            containing the kernel for the convolution
-            kh: `int`, is the height of the kernel
-            kw: `int`, is the width of the kernel
+        images (np.ndarray): shape (m, h, w) multiple grayscale images.
+        kernel (np.ndarray): shape (kh, kw) convolution kernel.
     Returns:
-        output: `numpy.ndarray` containing the convolved images
+        np.ndarray: convolved images (m, h-kh+1, w-kw+1)
     """
-    m, h, w = images.shape[0], images.shape[1], images.shape[2]
-    kh, kw = kernel.shape[0], kernel.shape[1]
-    nw = w - kw + 1
-    nh = h - kh + 1
-    convolved = np.zeros((m, nh, nw))
-    for i in range(nh):
-        for j in range(nw):
-            image = images[:, i:(i + kh), j:(j + kw)]
-            convolved[:, i, j] = np.sum(np.multiply(image, kernel),
-                                        axis=(1, 2))
-    return convolved
+    m, h, w = images.shape
+    kh, kw = kernel.shape
+    out_h = h - kh + 1
+    out_w = w - kw + 1
+    conv = np.zeros((m, out_h, out_w))
+    for i in range(out_h):
+        for j in range(out_w):
+            window = images[:, i:i+kh, j:j+kw]
+            conv[:, i, j] = np.sum(window * kernel, axis=(1, 2))
+    return conv

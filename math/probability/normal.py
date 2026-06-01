@@ -1,79 +1,123 @@
 #!/usr/bin/env python3
-"""
-This class represents a Normal distribution
-"""
+"""Normal distribution class (no external modules)."""
 
 
 class Normal:
-    """
-    This class represents a Normal distribution
+    """Represents a normal (Gaussian) distribution.
+
+    Attributes:
+        mean (float): Distribution mean.
+        stddev (float): Distribution standard deviation (> 0).
     """
 
     def __init__(self, data=None, mean=0., stddev=1.):
-        """
-        function initializes the normal distribution
-        data - list of the data to be used to estimate the distribution
-        mean - mean of the distribution
-        stddev - standard deviation
-        """
-        # Updated values for pi and Euler's number
-        self.PI = 3.141592653589793
-        self.E = 2.718281828459045
+        """Initialize a normal distribution.
 
+        Args:
+            data (list or None): Sample used to estimate mean and stddev when
+                provided.
+            mean (float): Mean to use when `data is None`.
+            stddev (float): Std dev to use when `data is None`.
+
+        Raises:
+            TypeError: If `data` is provided and is not a list.
+            ValueError: If `data` has fewer than two points.
+            ValueError: If provided `stddev` is not a positive value.
+        """
         if data is None:
-            if stddev <= 0:
+            if stddev is None or stddev <= 0:
                 raise ValueError("stddev must be a positive value")
-            else:
-                self.stddev = float(stddev)
             self.mean = float(mean)
-
+            self.stddev = float(stddev)
         else:
             if not isinstance(data, list):
                 raise TypeError("data must be a list")
             if len(data) < 2:
                 raise ValueError("data must contain multiple values")
 
-            self.mean = float(sum(data) / len(data))
+            n = float(len(data))
+            # Compute mean
+            total = 0.0
+            for x in data:
+                total += x
+            mu = total / n
 
-            squared_diff = [(x - self.mean) ** 2 for x in data]
-            # Use the population standard deviation formula
-            self.stddev = (sum(squared_diff) / len(data)) ** 0.5
+            # Compute (population) standard deviation
+            sq_sum = 0.0
+            for x in data:
+                diff = x - mu
+                sq_sum += diff * diff
+            sigma = (sq_sum / n) ** 0.5
+
+            if sigma <= 0:
+                # Degenerate case; still enforce positivity per spec
+                raise ValueError("stddev must be a positive value")
+
+            self.mean = float(mu)
+            self.stddev = float(sigma)
 
     def z_score(self, x):
+        """Return the z-score of value x.
+
+        z = (x - mean) / stddev
         """
-        calculates z-score of a given x-value
-        x is the value
-        """
+        x = float(x)
         return (x - self.mean) / self.stddev
 
     def x_value(self, z):
+        """Return the x-value for a given z-score.
+
+        x = z * stddev + mean
         """
-        calculates x-value of the given z-score
-        z - z-score
-        """
-        return self.mean + z * self.stddev
+        z = float(z)
+        return z * self.stddev + self.mean
 
     def pdf(self, x):
+        """Return the PDF value for x.
+
+        Uses 1/(σ√(2π)) · e^{-(1/2)((x−μ)/σ)^2} with numeric constants.
         """
-        calculates the value of the PDF for a given x-value
-        x - the x-value
-        # """
-        exponent = -((x - self.mean) ** 2) / (2 * (self.stddev ** 2))
-        pdf_value = (1 / (self.stddev * ((2 * self.PI) ** 0.5))) * \
-            (self.E ** exponent)
-        return pdf_value
+        x = float(x)
+        z = (x - self.mean) / self.stddev
+        pi_const = 3.141592653589793
+        e_const = 2.718281828459045
+        denom = self.stddev * (2.0 * pi_const) ** 0.5
+        exp_term = e_const ** (-0.5 * z * z)
+        return exp_term / denom
+
+    @staticmethod
+    def _erf(x):
+        """Approximate the error function erf(x) with A&S formula.
+
+        Uses Abramowitz and Stegun formula 7.1.26.
+        """
+        # Save the sign of x
+        sign = 1.0
+        if x < 0:
+            sign = -1.0
+            x = -x
+
+        # Constants
+        p = 0.3275911
+        a1 = 0.254829592
+        a2 = -0.284496736
+        a3 = 1.421413741
+        a4 = -1.453152027
+        a5 = 1.061405429
+
+        t = 1.0 / (1.0 + p * x)
+        poly = (((((a5 * t) + a4) * t + a3) * t + a2) * t + a1) * t
+        e_const = 2.718281828459045
+        exp_term = e_const ** (-(x * x))
+        y = 1.0 - poly * exp_term
+        return sign * y
 
     def cdf(self, x):
-        """
-        calculates the value of the CDF for a given x-value
-        x - the x-value
-        """
-        erf = (x - self.mean) / (self.stddev * (2 ** 0.5))
-        cdf = 0.5 * (1 + (self.erf(erf)))
-        return cdf
+        """Return the CDF value for x.
 
-    def erf(self, x):
-        """ Calculates the error function
+        Uses Φ(x) = 0.5 * [1 + erf((x−μ)/(σ√2))].
         """
-        return (2 / (self.PI ** 0.5)) * (x - (x ** 3) / 3 + (x ** 5) / 10
-                                         - (x ** 7) / 42 + (x ** 9) / 216)
+        x = float(x)
+        z = (x - self.mean) / self.stddev
+        sqrt2 = 2.0 ** 0.5
+        return 0.5 * (1.0 + self._erf(z / sqrt2))

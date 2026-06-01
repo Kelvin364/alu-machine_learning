@@ -1,66 +1,119 @@
 #!/usr/bin/env python3
-"""
-This class represents a Binomial distribution
-"""
+"""Binomial distribution class (no external modules)."""
 
 
 class Binomial:
-    """
-    This class represents a Binomial distribution
+    """Represents a Binomial(n, p) distribution.
+
+    Attributes:
+        n (int): number of trials (> 0 when provided directly).
+        p (float): success probability (0 < p < 1 when provided directly).
     """
 
     def __init__(self, data=None, n=1, p=0.5):
-        """
-        function initializes the Binomial distribution
-        data - list of the data to be used to estimate the distribution
-        n - number of Bernoulli trials
-        p - probability of a “success”
+        """Initialize a binomial distribution.
+
+        Args:
+            data (list or None): Sample used to estimate n and p when provided.
+            n (int/float): Number of trials (used when data is None).
+            p (float): Success probability (used when data is None).
+
+        Raises:
+            TypeError: If data is provided and is not a list.
+            ValueError: If data has fewer than two points.
+            ValueError: If provided n <= 0 or p not in (0, 1).
         """
         if data is None:
-            if n <= 0:
-                raise ValueError('n must be a positive value')
-            if p <= 0 or p >= 1:
-                raise ValueError('p must be greater than 0 and less than 1')
+            # Use provided parameters, validate
+            if n is None or n <= 0:
+                raise ValueError("n must be a positive value")
+            if p is None or not (0 < p < 1):
+                raise ValueError(
+                    "p must be greater than 0 and less than 1"
+                )
             self.n = int(n)
             self.p = float(p)
         else:
             if not isinstance(data, list):
-                raise TypeError('data must be a list')
+                raise TypeError("data must be a list")
             if len(data) < 2:
-                raise ValueError('data must contain multiple values')
-            mean = sum(data) / len(data)
-            variance = sum((x - mean) ** 2 for x in data) / len(data)
-            p = 1.0 - variance / mean
-            self.n = round((mean / p))
-            self.p = float(mean / self.n)
+                raise ValueError("data must contain multiple values")
 
-    def factorial(self, k):
-        """ Find factorial of a number """
-        result = 1
-        for i in range(1, k+1):
-            result *= i
-        return result
+            # Compute mean and variance from data
+            m = 0.0
+            for x in data:
+                m += x
+            m /= float(len(data))
+
+            var = 0.0
+            for x in data:
+                d = x - m
+                var += d * d
+            var /= float(len(data))
+
+            # Estimate parameters: p first, then n, then refine p
+            # From Binomial: mean = n p, variance = n p (1-p)
+            # => p = 1 - variance/mean (assuming mean > 0)
+            if m == 0.0:
+                est_p = 0.0
+            else:
+                est_p = 1.0 - (var / m)
+            if est_p <= 0.0:
+                # Fallback to minimal positive to avoid division by zero
+                est_p = 1e-9
+
+            est_n = round(m / est_p) if est_p != 0.0 else 1.0
+            if est_n <= 0:
+                est_n = 1.0
+
+            self.n = int(est_n)
+            # Recalculate p using mean and integer n
+            self.p = float(m / float(self.n))
 
     def pmf(self, k):
+        """Return the PMF value for k successes.
+
+        If k is not an int, casts to int. Returns 0 when k is outside [0, n].
         """
-        Calculates the PMF for a given number of "successes" k
-        k - The number of "successes"
-        Returns the PMF value for k.
-        """
-        if k < 0:
+        try:
+            if not isinstance(k, int):
+                k = int(k)
+        except Exception:
             return 0
-        k = int(k)
-        n_f = self.factorial(self.n)
-        k_f = self.factorial(k)
-        nk_f = self.factorial(self.n - k)
-        pk = self.p ** k
-        pmf = (n_f / (k_f * (nk_f))) * pk * ((1 - self.p) ** (self.n - k))
-        return pmf
+
+        if k < 0 or k > self.n:
+            return 0
+
+        # Compute n choose k using an integer-safe multiplicative formula
+        kk = k if k <= self.n - k else self.n - k
+        comb = 1
+        i = 1
+        while i <= kk:
+            comb = comb * (self.n - kk + i) // i
+            i += 1
+
+        q = 1.0 - self.p
+        return comb * (self.p ** k) * (q ** (self.n - k))
 
     def cdf(self, k):
-        '''calculate CDF for a given number of "successes" k'''
+        """Return the CDF value for k successes.
+
+        Sums pmf(i) for i from 0 to k. Casts non-int k to int. Returns 0 when
+        k < 0. If k exceeds n, the summation saturates at 1.
+        """
+        try:
+            if not isinstance(k, int):
+                k = int(k)
+        except Exception:
+            return 0
+
         if k < 0:
             return 0
-        k = int(k)
-        cdf = sum(self.pmf(i) for i in range(k + 1))
-        return cdf
+
+        total = 0.0
+        i = 0
+        limit = k if k <= self.n else self.n
+        while i <= limit:
+            total += self.pmf(i)
+            i += 1
+        return total

@@ -1,61 +1,78 @@
 #!/usr/bin/env python3
-"""Class Neuron that defines a single neuron performing binary classification
 """
-
+Neuron module for binary classification.
+"""
 
 import numpy as np
 
 
 class Neuron:
-    """ Class Neuron
+    """
+    A single neuron performing binary classification.
     """
 
     def __init__(self, nx):
-        """ Instantiation function of the neuron
+        """
+        Initialize a Neuron instance.
 
         Args:
-            nx (_type_): _description_
+            nx (int): The number of input features to the neuron.
 
         Raises:
-            TypeError: _description_
-            ValueError: _description_
+            TypeError: If nx is not an integer.
+            ValueError: If nx is less than 1.
         """
         if not isinstance(nx, int):
-            raise TypeError('nx must be an integer')
+            raise TypeError("nx must be a integer")
         if nx < 1:
-            raise ValueError('nx must be positive')
+            raise ValueError("nx must be positive")
 
-        # initialize private instance attributes
-        self.__W = np.random.normal(size=(1, nx))
+        self.__W = np.random.normal(0, 1, (1, nx))
         self.__b = 0
         self.__A = 0
 
-        # getter function
     @property
     def W(self):
-        """Return weights"""
+        """
+        Getter for the weights vector.
+
+        Returns:
+            numpy.ndarray: The weights vector.
+        """
         return self.__W
 
     @property
     def b(self):
-        """Return bias"""
+        """
+        Getter for the bias.
+
+        Returns:
+            float: The bias value.
+        """
         return self.__b
 
     @property
     def A(self):
-        """Return output"""
+        """
+        Getter for the activated output.
+
+        Returns:
+            float: The activated output value.
+        """
         return self.__A
 
     def forward_prop(self, X):
-        """Calculates the forward propagation of the neuron
+        """
+        Calculate the forward propagation of the neuron.
 
         Args:
-            X (numpy.ndarray): matrix with the input data of shape (nx, m)
+            X (numpy.ndarray): Input data with shape (nx, m), where nx is the
+                              number of input features and m is the number of
+                              examples.
 
         Returns:
-            numpy.ndarray: The output of the neural network.
+            numpy.ndarray: The activated output of the neuron.
         """
-        z = np.matmul(self.__W, X) + self.__b
-        sigmoid = 1 / (1 + np.exp(-z))
-        self.__A = sigmoid
+        z = np.dot(self.__W, X) + self.__b
+        self.__A = 1 / (1 + np.exp(-z))
         return self.__A

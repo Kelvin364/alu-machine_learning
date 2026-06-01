@@ -1,1 +1,1 @@
-# bayesian_prob
+Baye's method

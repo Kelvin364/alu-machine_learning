@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""
-transpose an n x m matrix (2D list) and return the transposed matrix.
-"""
+'''
+    This script has a function def np_transpose(matrix)
+    that transposes matrix:
+'''
 
 
 def np_transpose(matrix):
-    """
-    Returns the transpose of a 2D matrix
-    """
+    '''
+        A function def np_transpose(matrix)
+        that transposes matrix:
+    '''
     return matrix.transpose()

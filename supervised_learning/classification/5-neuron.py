@@ -1,107 +1,139 @@
 #!/usr/bin/env python3
-"""Class Neuron that defines a single neuron performing binary classification
 """
-
+Neuron module for binary classification.
+"""
 
 import numpy as np
 
 
 class Neuron:
-    """ Class Neuron
+    """
+    A single neuron performing binary classification.
     """
 
     def __init__(self, nx):
-        """ Instantiation function of the neuron
+        """
+        Initialize a Neuron instance.
 
         Args:
-            nx (int): number of features to be initialized
+            nx (int): The number of input features to the neuron.
 
         Raises:
-            TypeError: _description_
-            ValueError: _description_
+            TypeError: If nx is not an integer.
+            ValueError: If nx is less than 1.
         """
         if not isinstance(nx, int):
-            raise TypeError('nx must be an integer')
+            raise TypeError("nx must be a integer")
         if nx < 1:
-            raise ValueError('nx must be positive')
+            raise ValueError("nx must be positive")
 
-        # initialize private instance attributes
-        self.__W = np.random.normal(size=(1, nx))
+        self.__W = np.random.normal(0, 1, (1, nx))
         self.__b = 0
         self.__A = 0
 
-        # getter function
     @property
     def W(self):
-        """Return weights"""
+        """
+        Getter for the weights vector.
+
+        Returns:
+            numpy.ndarray: The weights vector.
+        """
         return self.__W
 
     @property
     def b(self):
-        """Return bias"""
+        """
+        Getter for the bias.
+
+        Returns:
+            float: The bias value.
+        """
         return self.__b
 
     @property
     def A(self):
-        """Return output"""
+        """
+        Getter for the activated output.
+
+        Returns:
+            float: The activated output value.
+        """
         return self.__A
 
     def forward_prop(self, X):
-        """Calculates the forward propagation of the neuron
+        """
+        Calculate the forward propagation of the neuron.
 
         Args:
-            X (numpy.ndarray): matrix with the input data of shape (nx, m)
+            X (numpy.ndarray): Input data with shape (nx, m), where nx is the
+                              number of input features and m is the number of
+                              examples.
 
         Returns:
-            numpy.ndarray: The output of the neural network.
+            numpy.ndarray: The activated output of the neuron.
         """
-        z = np.matmul(self.__W, X) + self.__b
-        sigmoid = 1 / (1 + np.exp(-z))
-        self.__A = sigmoid
+        z = np.dot(self.__W, X) + self.__b
+        self.__A = 1 / (1 + np.exp(-z))
         return self.__A
 
     def cost(self, Y, A):
-        """ Compute the of the model using logistic regression
+        """
+        Calculate the cost of the model using logistic regression.
 
         Args:
-            Y (np.array): True values
-            A (np.array): Prediction valuesss
+            Y (numpy.ndarray): Correct labels with shape (1, m), where m is the
+                              number of examples.
+            A (numpy.ndarray): Activated output with shape (1, m), containing
+                              the activated output of the neuron for each
+                              example.
 
         Returns:
-            float: cost function
+            float: The cost of the model.
         """
-        # calculate
-        loss = - (Y * np.log(A) + (1 - Y) * np.log(1.0000001 - A))
-        cost = np.mean(loss)
+        m = Y.shape[1]
+        cost = -(1 / m) * np.sum(Y * np.log(A) + (1 - Y) * np.log(1.0000001 - A))
         return cost
 
     def evaluate(self, X, Y):
-        """ Evaluate the cost function
+        """
+        Evaluate the neuron's predictions.
 
         Args:
-            X (_type_): _description_
-            Y (_type_): _description_
+            X (numpy.ndarray): Input data with shape (nx, m), where nx is the
+                              number of input features and m is the number of
+                              examples.
+            Y (numpy.ndarray): Correct labels with shape (1, m), containing the
+                              correct labels for the input data.
 
         Returns:
-            _type_: _description_
+            tuple: A tuple containing:
+                - prediction (numpy.ndarray): Predicted labels with shape (1, m),
+                  where label values are 1 if output >= 0.5, 0 otherwise.
+                - cost (float): The cost of the network.
         """
-        pred = self.forward_prop(X)
-        cost = self.cost(Y, pred)
-        pred = np.where(pred > 0.5, 1, 0)
-        return (pred, cost)
+        A = self.forward_prop(X)
+        prediction = (A >= 0.5).astype(int)
+        cost = self.cost(Y, A)
+        return prediction, cost
 
     def gradient_descent(self, X, Y, A, alpha=0.05):
-        """ Calculate one pass of gradient descent on the neuron
+        """
+        Calculate one pass of gradient descent on the neuron.
 
         Args:
-            X (_type_): _description_
-            Y (_type_): _description_
-            A (_type_): _description_
-            alpha (float, optional): _description_. Defaults to 0.05.
+            X (numpy.ndarray): Input data with shape (nx, m), where nx is the
+                              number of input features and m is the number of
+                              examples.
+            Y (numpy.ndarray): Correct labels with shape (1, m), containing the
+                              correct labels for the input data.
+            A (numpy.ndarray): Activated output with shape (1, m), containing
+                              the activated output of the neuron for each
+                              example.
+            alpha (float): The learning rate. Defaults to 0.05.
         """
-        dz = A - Y
-        m = X.shape[1]
-        dw = (1/m) * np.matmul(dz, X.T)
-        db = np.mean(dz)
-        self.__W -= alpha * dw
-        self.__b -= alpha * db
+        m = Y.shape[1]
+        dW = (1 / m) * np.dot(A - Y, X.T)
+        db = (1 / m) * np.sum(A - Y)
+        self.__W = self.__W - alpha * dW
+        self.__b = self.__b - alpha * db

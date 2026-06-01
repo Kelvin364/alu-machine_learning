@@ -1,6 +1,0 @@
-data/*
-*.npz
-myenv
-__pycache__/
-*.pyc
-*.pyo

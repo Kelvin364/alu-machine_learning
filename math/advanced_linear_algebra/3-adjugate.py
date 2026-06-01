@@ -1,61 +1,68 @@
 #!/usr/bin/env python3
-"""Function that calculates the adjugate matrix of a matrix"""
+"""Adjugate matrix computation without imports."""
 
 
-def determinant(matrix):
-    """Function that calculates the determinant of a matrix"""
-    if len(matrix) == 2:
-        return ((matrix[0][0] * matrix[1][1]) - (matrix[0][1] * matrix[1][0]))
-    det = []
-    for i in range(len(matrix)):
-        mini = [[j for j in matrix[i]] for i in range(1, len(matrix))]
-        for j in range(len(mini)):
-            mini[j].pop(i)
-        if i % 2 == 0:
-            det.append(matrix[0][i] * determinant(mini))
-        if i % 2 == 1:
-            det.append(-1 * matrix[0][i] * determinant(mini))
-    return sum(det)
-
-
-def cofactor(matrix):
-    """Function that calculates the cofactor matrix of a matrix"""
-    if len(matrix) == 2:
-        cofactor = [i[::-1] for i in matrix]
-        cofactor = cofactor[::-1]
-        cofactor = [[cofactor[i][j] if (i + j) % 2 == 0 else -cofactor[i][j]
-                     for j in range(len(cofactor[i]))]
-                    for i in range(len(cofactor))]
-        return cofactor
-    cofactor = [[j for j in matrix[i]] for i in range(len(matrix))]
-    for i in range(len(matrix)):
-        for j in range(len(matrix[i])):
-            mini = [[j for j in matrix[i]] for i in range(len(matrix))]
-            mini = mini[:i] + mini[i + 1:]
-            for k in range(len(mini)):
-                mini[k].pop(j)
-            if (i + j) % 2 == 0:
-                cofactor[i][j] = determinant(mini)
-            if (i + j) % 2 == 1:
-                cofactor[i][j] = -1 * determinant(mini)
-    return cofactor
+def _determinant(matrix):
+    """Compute determinant of a square matrix (list of lists)."""
+    if matrix == [[]]:
+        return 1
+    n = len(matrix)
+    if n == 1:
+        return matrix[0][0]
+    if n == 2:
+        return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0]
+    det = 0
+    for j, elem in enumerate(matrix[0]):
+        minor = [
+            [matrix[i][k] for k in range(n) if k != j]
+            for i in range(1, n)
+        ]
+        det += ((-1) ** j) * elem * _determinant(minor)
+    return det
 
 
 def adjugate(matrix):
-    """Function that calculates the adjugate matrix of a matrix"""
-    if type(matrix) is not list or len(matrix) == 0:
+    """Return the adjugate matrix of a given matrix.
+
+    Args:
+        matrix: list of lists representing a matrix.
+
+    Returns:
+        A list of lists containing the adjugate of the matrix.
+
+    Raises:
+        TypeError: if matrix is not a list of lists.
+        ValueError: if matrix is not a non-empty square matrix.
+    """
+    if not isinstance(matrix, list):
         raise TypeError("matrix must be a list of lists")
-    for i in matrix:
-        if type(i) is not list:
+    if len(matrix) == 0:
+        raise ValueError("matrix must be a non-empty square matrix")
+
+    n = len(matrix)
+    row_lengths = []
+    for row in matrix:
+        if not isinstance(row, list):
             raise TypeError("matrix must be a list of lists")
-    for i in matrix:
-        if len(matrix) != len(i):
-            raise ValueError("matrix must be a non-empty square matrix")
-    if len(matrix) == 1 and len(matrix) == 1:
+        row_lengths.append(len(row))
+    if any(rl != n for rl in row_lengths) or n == 0:
+        raise ValueError("matrix must be a non-empty square matrix")
+
+    # For 1x1, adjugate is [[1]] (cofactor of sole element)
+    if n == 1:
         return [[1]]
-    adjugate = cofactor(matrix)
-    copy = [[j for j in adjugate[i]] for i in range(len(adjugate))]
-    for i in range(len(adjugate)):
-        for j in range(len(adjugate[i])):
-            adjugate[j][i] = copy[i][j]
-    return adjugate
+
+    # Compute cofactor matrix
+    cof = []
+    for i in range(n):
+        co_row = []
+        for j in range(n):
+            sub = [[matrix[r][c] for c in range(n) if c != j]
+                   for r in range(n) if r != i]
+            sign = -1 if ((i + j) % 2) else 1
+            co_row.append(sign * _determinant(sub if sub else [[]]))
+        cof.append(co_row)
+
+    # Transpose cofactor to get adjugate
+    adj = [[cof[r][c] for r in range(n)] for c in range(n)]
+    return adj

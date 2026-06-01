@@ -1,46 +1,37 @@
 #!/usr/bin/env python3
 """
-Defines function that performs forward propagation for simple RNN
+Unrolled forward pass for a simple RNN.
 """
-
 
 import numpy as np
 
 
 def rnn(rnn_cell, X, h_0):
     """
-    Performs forward propagation for simple RNN
+    Run forward propagation through `t` time steps using one RNN cell.
 
-    parameters:
-        rnn_cell [instance of RNNCell]:
-            cell that will be used for the forward propagation
-        X [numpy.ndarray of shape (t, m, i)]:
-            the data to be used
-            t: maximum number of time steps
-            m: the batch size
-            i: the dimensionality of the data
-        h_0 [numpy.ndarray of shape (m, h)]:
-            the initial hidden state
-            h: the dimensionality of the hidden state
+    Args:
+        rnn_cell: Instance of RNNCell.
+        X (np.ndarray): Inputs of shape (t, m, i).
+        h_0 (np.ndarray): Initial hidden state of shape (m, h).
 
-    returns:
-        H, Y:
-            H [numpy.ndarray]:
-                contains all the hidden states
-            Y [numpy.ndarray]:
-                contains all the outputs
+    Returns:
+        tuple:
+            H (np.ndarray): All hidden states, shape (t + 1, m, h). Row 0 is
+                h_0; row s + 1 is the state after step s.
+            Y (np.ndarray): Outputs at each step, shape (t, m, o).
     """
-    t, m, i = X.shape
-    m, h = h_0.shape
-    H = np.zeros((t + 1, m, h))
+    t = X.shape[0]
+    m, h_dim = h_0.shape
+    o = rnn_cell.Wy.shape[1]
+
+    H = np.zeros((t + 1, m, h_dim))
     H[0] = h_0
-    for step in range(t):
-        h_next, y = rnn_cell.forward(H[step], X[step])
-        H[step + 1] = h_next
-        if step == 0:
-            Y = y
-        else:
-            Y = np.concatenate((Y, y))
-    output_shape = Y.shape[-1]
-    Y = Y.reshape(t, m, output_shape)
-    return (H, Y)
+    Y = np.zeros((t, m, o))
+
+    for s in range(t):
+        h_next, y = rnn_cell.forward(H[s], X[s])
+        H[s + 1] = h_next
+        Y[s] = y
+
+    return H, Y

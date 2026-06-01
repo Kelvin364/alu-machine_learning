@@ -1,53 +1,47 @@
 #!/usr/bin/env python3
 """
-Defines function that performs forward propagation for a deep RNN
+Deep (stacked) RNN forward pass.
 """
-
 
 import numpy as np
 
 
 def deep_rnn(rnn_cells, X, h_0):
     """
-    Performs forward propagation for a deep RNN
-    parameters:
-        rnn_cells [list of instances of RNNCell]:
-            cells that will be used for the forward propagation
-            l: list length; number of layers in deep RNN
-        X [numpy.ndarray of shape (t, m, i)]:
-            the data to be used
-            t: maximum number of time steps
-            m: the batch size
-            i: the dimensionality of the data
-        h_0 [numpy.ndarray of shape (l, m, h)]:
-            the initial hidden state
-            l: number of layers
-            m: the batch size
-            h: the dimensionality of the hidden state
+    Run forward propagation through ``l`` stacked RNN layers over ``t`` steps.
 
-    returns:
-        H, Y:
-            H [numpy.ndarray]:
-                contains all the hidden states
-            Y [numpy.ndarray]:
-                contains all the outputs
+    At each time step, layer 0 receives ``X[s]``; deeper layers receive the
+    updated hidden state of the layer below. Each layer reads its previous
+    hidden state from ``H[s, ell]``.
+
+    Args:
+        rnn_cells (list): Length ``l`` of RNNCell instances (aligned inputs).
+        X (np.ndarray): Inputs of shape (t, m, i).
+        h_0 (np.ndarray): Initial hiddens per layer, shape (l, m, h).
+
+    Returns:
+        tuple:
+            H (np.ndarray): Shape (t + 1, l, m, h). ``H[0]`` equals ``h_0``;
+                ``H[s + 1, ell]`` is layer ``ell`` after step ``s``.
+            Y (np.ndarray): Shape (t, m, o), softmax outputs from the last cell.
     """
-    layers = len(rnn_cells)
-    t, m, i = X.shape
-    l, m, h = h_0.shape
-    H = np.zeros((t + 1, layers, m, h))
+    l_len = len(rnn_cells)
+    t = X.shape[0]
+    m = X.shape[1]
+    h_dim = h_0.shape[2]
+
+    H = np.zeros((t + 1, l_len, m, h_dim))
     H[0] = h_0
-    for step in range(t):
-        for layer in range(layers):
-            if layer == 0:
-                h_prev = X[step]
-            h_prev, y = rnn_cells[layer].forward(H[step, layer], h_prev)
-            H[step + 1, layer, ...] = h_prev
-            if layer == layers - 1:
-                if step == 0:
-                    Y = y
-                else:
-                    Y = np.concatenate((Y, y))
-    output_shape = Y.shape[-1]
-    Y = Y.reshape(t, m, output_shape)
-    return (H, Y)
+
+    out_dim = rnn_cells[-1].Wy.shape[1]
+    Y = np.zeros((t, m, out_dim))
+
+    for s in range(t):
+        layer_input = X[s]
+        for ell in range(l_len):
+            h_next, y_out = rnn_cells[ell].forward(H[s, ell], layer_input)
+            H[s + 1, ell] = h_next
+            layer_input = h_next
+        Y[s] = y_out
+
+    return H, Y

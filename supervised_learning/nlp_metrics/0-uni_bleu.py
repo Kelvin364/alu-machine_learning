@@ -1,35 +1,44 @@
 #!/usr/bin/env python3
-'''
-    calculates the unigram BLEU score
-'''
+"""Unigram (modified) BLEU with brevity penalty."""
 
+from collections import Counter
 
 import numpy as np
 
 
 def uni_bleu(references, sentence):
-    '''
-        calculates the unigram BLEU score
-        for a sentence
-    '''
-    sentence_length = len(sentence)
-    references_length = []
-    words = {}
+    """
+    Unigram BLEU: clipped unigram precision times brevity penalty.
 
-    for translation in references:
-        references_length.append(len(translation))
-        for word in translation:
-            if word in sentence and word not in words.keys():
-                words[word] = 1
+    References:
+        Papineni et al., BLEU: a Method for Automatic Evaluation of Machine Translation.
 
-    total = sum(words.values())
-    index = np.argmin([abs(len(i) - sentence_length) for i in references])
-    best_match = len(references[index])
+    Args:
+        references (list of list[str]): Candidate reference tokenizations.
+        sentence (list[str]): Hypothesis tokenization.
 
-    if sentence_length > best_match:
-        BLEU = 1
+    Returns:
+        float: Unigram BLEU score on ``[0, 1]``.
+    """
+    if not sentence:
+        return float(0.0)
+
+    cand_len = len(sentence)
+    hyp_counts = Counter(sentence)
+
+    clipped = sum(
+        min(hyp_counts[w], max(ref.count(w) for ref in references))
+        for w in hyp_counts
+    )
+
+    precision = clipped / cand_len
+
+    distances = [(abs(len(r) - cand_len), len(r)) for r in references]
+    _, r = min(distances)
+
+    if cand_len > r:
+        bp = 1.0
     else:
-        BLEU = np.exp(1 - float(best_match) / float(sentence_length))
-    BLEU_score = BLEU * np.exp(np.log(total / sentence_length))
+        bp = float(np.exp(1 - r / cand_len))
 
-    return BLEU_score
+    return bp * precision

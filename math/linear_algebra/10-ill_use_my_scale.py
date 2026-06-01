@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-"""
-Calculate the shape of an Ndarray
+""" implements the np_shape function
 """
 
 
 def np_shape(matrix):
+    """ returns the shape of a numpy nd.array
     """
-    Calculate the shape of an Ndarray
-    """
-    return tuple(matrix.shape)
+    return matrix.shape
